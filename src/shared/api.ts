@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { timeSources } from "@/domain/attendance";
 import { roles } from "@/domain/role";
 
 export const loginIdSchema = z
@@ -34,6 +35,11 @@ export const errorCodes = [
   "ALREADY_WORKING",
   "NOT_WORKING",
   "CLOCK_OUT_NOT_AFTER_CLOCK_IN",
+  "RECORD_NOT_FOUND",
+  "NO_CHANGES",
+  "CLOCK_OUT_REQUIRED",
+  "FUTURE_TIME",
+  "OVERLAPPING_RECORD",
   "INTERNAL_ERROR",
 ] as const;
 export type ErrorCode = (typeof errorCodes)[number];
@@ -61,6 +67,19 @@ export const statusSchema = z.discriminatedUnion("kind", [
 export const statusResponseSchema = z.object({ status: statusSchema });
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
 
+const timeSourceSchema = z.enum(timeSources);
+
+export const shiftSchema = z.object({
+  id: z.uuid(),
+  clockInAt: isoDateTime,
+  clockOutAt: isoDateTime.nullable(),
+  clockInSource: timeSourceSchema,
+  clockOutSource: timeSourceSchema.nullable(),
+  editCount: z.number().int().nonnegative(),
+  durationMs: z.number().nullable(),
+});
+export type ShiftResponse = z.infer<typeof shiftSchema>;
+
 export const recordsResponseSchema = z.object({
   month: z.string(),
   days: z.array(
@@ -68,19 +87,46 @@ export const recordsResponseSchema = z.object({
       workDate: z.string(),
       durationMs: z.number(),
       working: z.boolean(),
-      shifts: z.array(
-        z.object({
-          id: z.uuid(),
-          clockInAt: isoDateTime,
-          clockOutAt: isoDateTime.nullable(),
-          durationMs: z.number().nullable(),
-        }),
-      ),
+      shifts: z.array(shiftSchema),
     }),
   ),
   totalMs: z.number(),
 });
 export type RecordsResponse = z.infer<typeof recordsResponseSchema>;
+
+const offsetDateTime = z.iso.datetime({
+  offset: true,
+  error: "日時はタイムゾーン付きのISO 8601形式で指定してください",
+});
+
+export const editRecordRequestSchema = z.object({
+  clockInAt: offsetDateTime,
+  clockOutAt: offsetDateTime.nullable(),
+  reason: z
+    .string("修正理由を入力してください")
+    .trim()
+    .min(1, "修正理由を入力してください")
+    .max(200, "修正理由は200文字以内にしてください"),
+});
+export type EditRecordRequest = z.infer<typeof editRecordRequestSchema>;
+
+export const editRecordResponseSchema = z.object({ shift: shiftSchema });
+
+export const recordEditsResponseSchema = z.object({
+  edits: z.array(
+    z.object({
+      id: z.uuid(),
+      editor: z.object({ id: z.uuid(), displayName: z.string() }),
+      previousClockInAt: isoDateTime,
+      previousClockOutAt: isoDateTime.nullable(),
+      newClockInAt: isoDateTime,
+      newClockOutAt: isoDateTime.nullable(),
+      reason: z.string(),
+      createdAt: isoDateTime,
+    }),
+  ),
+});
+export type RecordEditsResponse = z.infer<typeof recordEditsResponseSchema>;
 
 export const usersOverviewResponseSchema = z.object({
   month: z.string(),

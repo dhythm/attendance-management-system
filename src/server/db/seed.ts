@@ -113,7 +113,7 @@ export async function seedDemoData(db: Db, options: { password: string; now: Dat
     })),
   );
   await db.transaction(async (tx) => {
-    const records: (Shift & { userId: string })[] = [];
+    const records: (typeof attendanceRecords.$inferInsert)[] = [];
     for (const { loginId, displayName, role, passwordHash } of accounts) {
       const [row] = await tx
         .insert(users)
@@ -122,7 +122,13 @@ export async function seedDemoData(db: Db, options: { password: string; now: Dat
         .returning({ id: users.id });
       if (!row) throw new Error(`failed to upsert demo account ${loginId}`);
       await tx.delete(attendanceRecords).where(eq(attendanceRecords.userId, row.id));
-      records.push(...demoShifts(loginId, options.now).map((s) => ({ ...s, userId: row.id })));
+      records.push(
+        ...demoShifts(loginId, options.now).map((s) => ({
+          ...s,
+          userId: row.id,
+          clockOutSource: s.clockOutAt ? ("clock" as const) : null,
+        })),
+      );
     }
     if (records.length > 0) await tx.insert(attendanceRecords).values(records);
   });

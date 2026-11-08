@@ -14,6 +14,11 @@ const errors: Record<ErrorCode, { status: number; message: string }> = {
   ALREADY_WORKING: { status: 409, message: "既に出勤しています" },
   NOT_WORKING: { status: 409, message: "出勤していません" },
   CLOCK_OUT_NOT_AFTER_CLOCK_IN: { status: 409, message: "退勤時刻が出勤時刻より前です" },
+  RECORD_NOT_FOUND: { status: 404, message: "勤怠記録が見つかりません" },
+  NO_CHANGES: { status: 409, message: "出勤・退勤の時刻が変わっていません" },
+  CLOCK_OUT_REQUIRED: { status: 409, message: "記録済みの退勤時刻は削除できません" },
+  FUTURE_TIME: { status: 400, message: "未来の時刻は指定できません" },
+  OVERLAPPING_RECORD: { status: 409, message: "ほかの勤怠記録と時間が重なっています" },
   INTERNAL_ERROR: { status: 500, message: "サーバーでエラーが発生しました" },
 };
 

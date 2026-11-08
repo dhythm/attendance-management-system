@@ -5,6 +5,7 @@ import {
   monthRange,
   parseYearMonth,
   summarizeMonth,
+  workDurationMs,
   type YearMonth,
 } from "@/domain/attendance";
 import { err, ok, type Result } from "@/domain/result";
@@ -13,13 +14,20 @@ import { toStatusResponse } from "@/server/attendance-status";
 import type { Db } from "@/server/db/client";
 import { errorResponse } from "@/server/http";
 import {
+  type AttendanceRecordEdit,
+  type ListedAttendanceRecord,
   listAllOpenRecords,
   listAllRecordsClockedInBetween,
   listRecordsClockedInBetween,
   type UserAttendanceRecord,
 } from "@/server/repositories/attendance";
 import { listUsers } from "@/server/repositories/users";
-import type { RecordsResponse, UsersOverviewResponse } from "@/shared/api";
+import type {
+  RecordEditsResponse,
+  RecordsResponse,
+  ShiftResponse,
+  UsersOverviewResponse,
+} from "@/shared/api";
 
 export function parseMonthQuery(request: NextRequest, now: Date): Result<YearMonth, Response> {
   const param = request.nextUrl.searchParams.get("month");
@@ -41,14 +49,36 @@ export async function loadMonthRecords(
       workDate: day.workDate,
       durationMs: day.durationMs,
       working: day.working,
-      shifts: day.shifts.map((shift) => ({
-        id: shift.id,
-        clockInAt: shift.clockInAt.toISOString(),
-        clockOutAt: shift.clockOutAt?.toISOString() ?? null,
-        durationMs: shift.durationMs,
-      })),
+      shifts: day.shifts.map(toShiftResponse),
     })),
     totalMs: summary.totalMs,
+  };
+}
+
+export function toShiftResponse(record: ListedAttendanceRecord): ShiftResponse {
+  return {
+    id: record.id,
+    clockInAt: record.clockInAt.toISOString(),
+    clockOutAt: record.clockOutAt?.toISOString() ?? null,
+    clockInSource: record.clockInSource,
+    clockOutSource: record.clockOutSource,
+    editCount: record.editCount,
+    durationMs: workDurationMs(record),
+  };
+}
+
+export function toRecordEditsResponse(edits: AttendanceRecordEdit[]): RecordEditsResponse {
+  return {
+    edits: edits.map((edit) => ({
+      id: edit.id,
+      editor: { id: edit.editorId, displayName: edit.editorDisplayName },
+      previousClockInAt: edit.previousClockInAt.toISOString(),
+      previousClockOutAt: edit.previousClockOutAt?.toISOString() ?? null,
+      newClockInAt: edit.newClockInAt.toISOString(),
+      newClockOutAt: edit.newClockOutAt?.toISOString() ?? null,
+      reason: edit.reason,
+      createdAt: edit.createdAt.toISOString(),
+    })),
   };
 }
 
