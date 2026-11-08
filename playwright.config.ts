@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DEMO_PASSWORD } from "./tests/e2e/demo";
 
 const PORT = 3100;
 
@@ -23,6 +24,11 @@ export default defineConfig({
     url: `http://localhost:${PORT}/login`,
     timeout: 300_000,
     reuseExistingServer: false,
-    env: { DATABASE_URL: "", PGLITE_DATA_DIR: "memory://" },
+    env: {
+      DATABASE_URL: "",
+      PGLITE_DATA_DIR: "memory://",
+      SEED_DEMO_DATA: "true",
+      SEED_PASSWORD: DEMO_PASSWORD,
+    },
   },
 });

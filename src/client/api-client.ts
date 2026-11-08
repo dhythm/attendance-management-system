@@ -4,7 +4,6 @@ import {
   errorBodySchema,
   type LoginRequest,
   recordsResponseSchema,
-  type SignupRequest,
   statusResponseSchema,
   userResponseSchema,
 } from "@/shared/api";
@@ -48,8 +47,6 @@ async function request<S extends z.ZodType>(
 }
 
 export const api = {
-  signup: (body: SignupRequest) =>
-    request("/api/auth/signup", userResponseSchema, { method: "POST", body }),
   login: (body: LoginRequest) =>
     request("/api/auth/login", userResponseSchema, { method: "POST", body }),
   logout: () => request("/api/auth/logout", null, { method: "POST" }),
