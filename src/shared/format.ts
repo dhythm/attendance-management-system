@@ -17,13 +17,53 @@ const dateTimeFormat = new Intl.DateTimeFormat("ja-JP", {
   hourCycle: "h23",
 });
 
+const clockFormat = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+const JST_OFFSET_MS = 9 * 3_600_000;
+const DAY_MS = 24 * 3_600_000;
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
 
 export function formatDuration(ms: number): string {
   const totalMinutes = Math.floor(ms / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return `${hours}:${String(minutes).padStart(2, "0")}`;
+  return `${hours}:${pad(minutes)}`;
+}
+
+export function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  return `${hours}:${pad(Math.floor(totalSeconds / 60) % 60)}:${pad(totalSeconds % 60)}`;
+}
+
+export function formatClock(date: Date): string {
+  return clockFormat.format(date);
+}
+
+export function formatLongDate(date: Date): string {
+  const jst = new Date(date.getTime() + JST_OFFSET_MS);
+  return `${jst.getUTCFullYear()}年${jst.getUTCMonth() + 1}月${jst.getUTCDate()}日（${weekdays[jst.getUTCDay()]}）`;
+}
+
+export function minutesOfDay(iso: string): number {
+  const ms = (new Date(iso).getTime() + JST_OFFSET_MS) % DAY_MS;
+  return Math.floor(ms / 60_000);
+}
+
+export function isWeekend(workDate: string): boolean {
+  const day = new Date(`${workDate}T00:00:00Z`).getUTCDay();
+  return day === 0 || day === 6;
 }
 
 export function formatTime(iso: string): string {

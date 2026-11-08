@@ -15,7 +15,7 @@ test("マネージャー: 全員の勤務状況と個人の勤怠を確認する
   await expect(page.getByRole("heading", { name: /山田 太郎/ })).toBeVisible();
   await pause(page, 3000);
 
-  await page.getByRole("button", { name: "← 前月" }).click();
+  await page.getByRole("button", { name: "前月" }).click();
   await pause(page, 2000);
 
   await page
