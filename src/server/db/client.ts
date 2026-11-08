@@ -22,6 +22,10 @@ async function connectPglite(dataDir: string): Promise<DbHandle> {
   const client = new PGlite(dataDir);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder });
+  if (process.env.SEED_DEMO_DATA === "true") {
+    const { readSeedPassword, seedDemoData } = await import("./seed");
+    await seedDemoData(db, { password: readSeedPassword(process.env), now: new Date() });
+  }
   return { db, close: () => client.close() };
 }
 

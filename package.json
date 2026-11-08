@@ -19,6 +19,8 @@
     "test:integration": "vitest run tests/integration",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "db:create-admin": "tsx --env-file-if-exists=.env.local scripts/create-admin.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   }
