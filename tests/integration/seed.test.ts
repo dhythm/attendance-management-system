@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { POST as clockIn } from "@/app/api/attendance/clock-in/route";
 import { GET as me } from "@/app/api/me/route";
 import { getDb } from "@/server/db/client";
-import { attendanceRecords, users } from "@/server/db/schema";
+import { attendanceRecordEdits, attendanceRecords, users } from "@/server/db/schema";
 import { demoAccounts, seedDemoData } from "@/server/db/seed";
 import { call, logIn } from "./helpers";
 
@@ -21,7 +21,13 @@ async function demoRowCounts() {
     .from(attendanceRecords)
     .innerJoin(users, eq(attendanceRecords.userId, users.id))
     .where(inArray(users.loginId, demoLoginIds));
-  return { users: userCount?.n, records: recordCount?.n };
+  const [editCount] = await db
+    .select({ n: count() })
+    .from(attendanceRecordEdits)
+    .innerJoin(attendanceRecords, eq(attendanceRecordEdits.recordId, attendanceRecords.id))
+    .innerJoin(users, eq(attendanceRecords.userId, users.id))
+    .where(inArray(users.loginId, demoLoginIds));
+  return { users: userCount?.n, records: recordCount?.n, edits: editCount?.n };
 }
 
 describe("seedDemoData", () => {
@@ -48,6 +54,7 @@ describe("seedDemoData", () => {
     expect(await demoRowCounts()).toEqual(first);
     expect(first.users).toBe(4);
     expect(first.records).toBeGreaterThan(0);
+    expect(first.edits).toBe(2);
   });
 
   it("resets demo attendance changed since the previous run", async () => {

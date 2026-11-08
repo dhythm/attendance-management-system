@@ -62,6 +62,47 @@ describe("demoShifts", () => {
     expect(workDateOf(open?.clockInAt ?? new Date(0))).toBe("2026-11-18");
   });
 
+  it("records clock-button times on every shift nobody corrected", () => {
+    for (const loginId of ["manager", "yamada", "suzuki"]) {
+      for (const shift of demoShifts(loginId, now).filter((s) => s.edit === null)) {
+        expect(shift.clockInSource).toBe("clock");
+        expect(shift.clockOutSource).toBe(shift.clockOutAt ? "clock" : null);
+      }
+    }
+  });
+
+  it("has suzuki close the last weekday she forgot to clock out of that evening", () => {
+    const edited = demoShifts("suzuki", now).filter((s) => s.edit !== null);
+    expect(edited).toHaveLength(1);
+    const [shift] = edited;
+    expect(workDateOf(shift?.clockInAt ?? new Date(0))).toBe("2026-11-17");
+    expect(shift).toMatchObject({ clockInSource: "clock", clockOutSource: "edit" });
+    expect(shift?.edit).toMatchObject({
+      editorLoginId: "suzuki",
+      reason: "退勤の打刻忘れ",
+      previous: { clockInAt: shift?.clockInAt, clockOutAt: null },
+    });
+    expect(shift?.edit?.createdAt.getTime()).toBeGreaterThan(shift?.clockOutAt?.getTime() ?? 0);
+    expect(shift?.edit?.createdAt.getTime()).toBeLessThan(now.getTime());
+  });
+
+  it("has the manager move yamada's mistaken clock-in two weekdays ago", () => {
+    const edited = demoShifts("yamada", now).filter((s) => s.edit !== null);
+    expect(edited).toHaveLength(1);
+    const [shift] = edited;
+    expect(workDateOf(shift?.clockInAt ?? new Date(0))).toBe("2026-11-16");
+    expect(shift).toMatchObject({ clockInSource: "edit", clockOutSource: "clock" });
+    expect(shift?.edit).toMatchObject({
+      editorLoginId: "manager",
+      reason: "打刻時刻の誤り",
+      previous: { clockOutAt: shift?.clockOutAt },
+    });
+    expect(shift?.edit?.previous.clockInAt.getTime()).toBeGreaterThan(
+      shift?.clockInAt.getTime() ?? 0,
+    );
+    expect(shift?.edit?.createdAt.getTime()).toBeLessThan(now.getTime());
+  });
+
   it("gives accounts without demo attendance no shifts", () => {
     expect(demoShifts("admin", now)).toEqual([]);
   });
