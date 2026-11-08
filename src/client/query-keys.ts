@@ -5,4 +5,5 @@ export const queryKeys = {
   usersOverview: (month: string) => [...queryKeys.attendance, "users", month] as const,
   userRecords: (userId: string, month: string) =>
     [...queryKeys.attendance, "users", userId, "records", month] as const,
+  managedUsers: ["managed-users"] as const,
 };

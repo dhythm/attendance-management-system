@@ -194,3 +194,32 @@ tfoot td {
 .page-title {
   margin: 0 0 16px;
 }
+
+.section-title {
+  margin-bottom: 16px;
+}
+
+.success {
+  color: var(--working);
+  margin: 0 0 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.form-grid button {
+  justify-self: start;
+}
+
+select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}

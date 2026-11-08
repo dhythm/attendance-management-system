@@ -30,6 +30,7 @@ export const errorCodes = [
   "USER_NOT_FOUND",
   "INVALID_CREDENTIALS",
   "LOGIN_ID_TAKEN",
+  "LAST_ADMIN",
   "ALREADY_WORKING",
   "NOT_WORKING",
   "CLOCK_OUT_NOT_AFTER_CLOCK_IN",
@@ -86,3 +87,20 @@ export const usersOverviewResponseSchema = z.object({
   users: z.array(userSchema.extend({ status: statusSchema, totalMs: z.number() })),
 });
 export type UsersOverviewResponse = z.infer<typeof usersOverviewResponseSchema>;
+
+const roleSchema = z.enum(roles, "権限を選択してください");
+
+export const createUserRequestSchema = z.object({
+  loginId: loginIdSchema,
+  displayName: displayNameSchema,
+  password: passwordSchema,
+  role: roleSchema,
+});
+export type CreateUserRequest = z.infer<typeof createUserRequestSchema>;
+
+export const changeRoleRequestSchema = z.object({ role: roleSchema });
+
+export const managedUsersResponseSchema = z.object({
+  users: z.array(userSchema.extend({ createdAt: isoDateTime })),
+});
+export type ManagedUsersResponse = z.infer<typeof managedUsersResponseSchema>;

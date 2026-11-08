@@ -4,7 +4,7 @@ import { expect } from "vitest";
 import { POST as loginHandler } from "@/app/api/auth/login/route";
 import type { Role } from "@/domain/role";
 import { hashPassword } from "@/server/auth/password";
-import { getDb } from "@/server/db/client";
+import { closeDb, getDb } from "@/server/db/client";
 import { createUser } from "@/server/repositories/users";
 
 type Handler<P> = (request: NextRequest, ctx: { params: Promise<P> }) => Promise<Response>;
@@ -64,4 +64,42 @@ export async function createAccount(role: Role = "employee") {
   });
   if (user === "LOGIN_ID_TAKEN") throw new Error(`login ID collision: ${loginId}`);
   return { loginId, password, user, cookie: await logIn(loginId, password) };
+}
+
+// PGlite memory:// is recreated on reconnect; PostgreSQL gets a throwaway migrated database.
+export async function useFreshDatabase(): Promise<() => Promise<void>> {
+  await closeDb();
+  const serverUrl = process.env.DATABASE_URL;
+  if (!serverUrl) return closeDb;
+
+  const { Client, Pool } = await import("pg");
+  const { drizzle } = await import("drizzle-orm/node-postgres");
+  const { migrate } = await import("drizzle-orm/node-postgres/migrator");
+  const name = `ams_test_${randomUUID().replaceAll("-", "")}`;
+  const onServer = async (sql: string) => {
+    const client = new Client({ connectionString: serverUrl });
+    await client.connect();
+    try {
+      await client.query(sql);
+    } finally {
+      await client.end();
+    }
+  };
+
+  await onServer(`CREATE DATABASE "${name}"`);
+  const url = new URL(serverUrl);
+  url.pathname = `/${name}`;
+  const pool = new Pool({ connectionString: url.toString() });
+  try {
+    await migrate(drizzle(pool), { migrationsFolder: "drizzle" });
+  } finally {
+    await pool.end();
+  }
+  process.env.DATABASE_URL = url.toString();
+
+  return async () => {
+    await closeDb();
+    process.env.DATABASE_URL = serverUrl;
+    await onServer(`DROP DATABASE "${name}" WITH (FORCE)`);
+  };
 }

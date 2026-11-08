@@ -10,6 +10,7 @@ const errors: Record<ErrorCode, { status: number; message: string }> = {
   USER_NOT_FOUND: { status: 404, message: "ユーザーが見つかりません" },
   INVALID_CREDENTIALS: { status: 401, message: "ログインIDまたはパスワードが正しくありません" },
   LOGIN_ID_TAKEN: { status: 409, message: "このログインIDは既に使われています" },
+  LAST_ADMIN: { status: 409, message: "最後のアドミンの権限は変更できません" },
   ALREADY_WORKING: { status: 409, message: "既に出勤しています" },
   NOT_WORKING: { status: 409, message: "出勤していません" },
   CLOCK_OUT_NOT_AFTER_CLOCK_IN: { status: 409, message: "退勤時刻が出勤時刻より前です" },

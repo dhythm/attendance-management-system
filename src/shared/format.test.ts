@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, formatTime, formatWorkDate, formatYearMonth } from "./format";
+import {
+  formatDateTime,
+  formatDuration,
+  formatTime,
+  formatWorkDate,
+  formatYearMonth,
+} from "./format";
 
 describe("formatDuration", () => {
   it("formats hours and zero-padded minutes, flooring seconds", () => {
@@ -12,6 +18,12 @@ describe("formatDuration", () => {
 describe("formatTime", () => {
   it("shows the Asia/Tokyo wall-clock time", () => {
     expect(formatTime("2026-11-02T00:05:00.000Z")).toBe("09:05");
+  });
+});
+
+describe("formatDateTime", () => {
+  it("shows the Asia/Tokyo date and time", () => {
+    expect(formatDateTime("2026-10-31T15:30:00.000Z")).toBe("2026/11/01 00:30");
   });
 });
 

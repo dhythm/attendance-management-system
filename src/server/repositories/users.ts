@@ -61,3 +61,41 @@ export async function findUserById(db: Db, id: UserId): Promise<User | null> {
   const [row] = await db.select(publicColumns).from(users).where(eq(users.id, id)).limit(1);
   return row ? toUser(row) : null;
 }
+
+export async function listUsersWithCreatedAt(db: Db): Promise<(User & { createdAt: Date })[]> {
+  const rows = await db
+    .select({ ...publicColumns, createdAt: users.createdAt })
+    .from(users)
+    .orderBy(asc(users.createdAt), asc(users.loginId));
+  return rows.map((row) => ({ ...toUser(row), createdAt: row.createdAt }));
+}
+
+// Locking every admin row first makes concurrent demotions queue up, so the later one re-reads
+// the admin set after the earlier commit and cannot leave the system without an admin.
+export async function changeUserRole(
+  db: Db,
+  id: UserId,
+  role: Role,
+): Promise<User | "USER_NOT_FOUND" | "LAST_ADMIN"> {
+  return db.transaction(async (tx) => {
+    const admins = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.role, "admin"))
+      .for("update");
+    const [target] = await tx
+      .select(publicColumns)
+      .from(users)
+      .where(eq(users.id, id))
+      .for("update");
+    if (!target) return "USER_NOT_FOUND";
+    if (target.role === "admin" && role !== "admin" && admins.length <= 1) return "LAST_ADMIN";
+
+    const [updated] = await tx
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, id))
+      .returning(publicColumns);
+    return toUser(updated);
+  });
+}

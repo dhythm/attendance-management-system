@@ -1,8 +1,11 @@
 import type { z } from "zod";
+import type { Role } from "@/domain/role";
 import {
+  type CreateUserRequest,
   type ErrorCode,
   errorBodySchema,
   type LoginRequest,
+  managedUsersResponseSchema,
   recordsResponseSchema,
   statusResponseSchema,
   userResponseSchema,
@@ -63,4 +66,12 @@ export const api = {
       `/api/manager/users/${encodeURIComponent(userId)}/records?month=${encodeURIComponent(month)}`,
       recordsResponseSchema,
     ),
+  managedUsers: () => request("/api/admin/users", managedUsersResponseSchema),
+  createUser: (body: CreateUserRequest) =>
+    request("/api/admin/users", userResponseSchema, { method: "POST", body }),
+  changeRole: (userId: string, role: Role) =>
+    request(`/api/admin/users/${encodeURIComponent(userId)}`, userResponseSchema, {
+      method: "PATCH",
+      body: { role },
+    }),
 };

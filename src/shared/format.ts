@@ -7,6 +7,16 @@ const timeFormat = new Intl.DateTimeFormat("ja-JP", {
   hourCycle: "h23",
 });
 
+const dateTimeFormat = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
 export function formatDuration(ms: number): string {
@@ -18,6 +28,10 @@ export function formatDuration(ms: number): string {
 
 export function formatTime(iso: string): string {
   return timeFormat.format(new Date(iso));
+}
+
+export function formatDateTime(iso: string): string {
+  return dateTimeFormat.format(new Date(iso));
 }
 
 export function formatWorkDate(workDate: string): string {
