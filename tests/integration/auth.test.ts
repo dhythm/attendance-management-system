@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { POST as login } from "@/app/api/auth/login/route";
 import { POST as logout } from "@/app/api/auth/logout/route";
 import { POST as signup } from "@/app/api/auth/signup/route";
@@ -83,6 +83,20 @@ describe("GET /api/me", () => {
     const result = await call(me, "/api/me");
     expect(result.status).toBe(401);
     expect(result.json.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("returns 401 once the session has expired after 7 days", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-11-01T00:00:00Z"));
+      const { cookie } = await signUp();
+      vi.setSystemTime(new Date("2026-11-07T23:59:59Z"));
+      expect((await call(me, "/api/me", { cookie })).status).toBe(200);
+      vi.setSystemTime(new Date("2026-11-08T00:00:01Z"));
+      expect((await call(me, "/api/me", { cookie })).status).toBe(401);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns 401 for an unknown session token", async () => {

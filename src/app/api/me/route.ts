@@ -1,9 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { authenticate } from "@/server/auth/current-user";
-import { errorResponse, withErrorHandling } from "@/server/http";
+import { NextResponse } from "next/server";
+import { withUser } from "@/server/auth/current-user";
+import { withErrorHandling } from "@/server/http";
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const user = await authenticate(request);
-  if (!user) return errorResponse("UNAUTHORIZED");
-  return NextResponse.json({ user });
-});
+export const GET = withErrorHandling(
+  withUser(async (_request, user) => NextResponse.json({ user })),
+);
