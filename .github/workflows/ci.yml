@@ -44,6 +44,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/attendance
+      SEED_PASSWORD: ci-demo-password
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -54,6 +55,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
       - run: pnpm test:integration
+      - name: Seed demo data twice (must be idempotent)
+        run: pnpm db:seed && pnpm db:seed
 
   e2e:
     name: Build and E2E (Playwright)
