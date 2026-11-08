@@ -8,8 +8,10 @@ import {
   formatTime,
   formatWorkDate,
   formatYearMonth,
+  fromTokyoDateTimeLocal,
   isWeekend,
   minutesOfDay,
+  toTokyoDateTimeLocal,
 } from "./format";
 
 describe("formatDuration", () => {
@@ -75,5 +77,20 @@ describe("isWeekend", () => {
     expect(isWeekend("2026-11-07")).toBe(true);
     expect(isWeekend("2026-11-08")).toBe(true);
     expect(isWeekend("2026-11-09")).toBe(false);
+  });
+});
+
+describe("toTokyoDateTimeLocal", () => {
+  it("renders an instant as an Asia/Tokyo datetime-local value, dropping seconds", () => {
+    expect(toTokyoDateTimeLocal("2026-11-01T15:04:59.000Z")).toBe("2026-11-02T00:04");
+  });
+});
+
+describe("fromTokyoDateTimeLocal", () => {
+  it("reads a datetime-local value as Asia/Tokyo time", () => {
+    expect(fromTokyoDateTimeLocal("2026-11-02T00:04")).toBe("2026-11-02T00:04:00+09:00");
+    expect(new Date(fromTokyoDateTimeLocal("2026-11-02T00:04")).toISOString()).toBe(
+      "2026-11-01T15:04:00.000Z",
+    );
   });
 });

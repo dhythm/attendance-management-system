@@ -1,9 +1,17 @@
 "use client";
 
 import { type QueryKey, useQuery } from "@tanstack/react-query";
-import { CalendarCheck, CalendarDays, CalendarX2, Hourglass, TrendingUp } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarDays,
+  CalendarX2,
+  Hourglass,
+  Pencil,
+  PencilLine,
+  TrendingUp,
+} from "lucide-react";
 import { useState } from "react";
-import { workDateOf, type YearMonth } from "@/domain/attendance";
+import { type TimeSource, workDateOf, type YearMonth } from "@/domain/attendance";
 import type { RecordsResponse } from "@/shared/api";
 import {
   formatDuration,
@@ -12,6 +20,7 @@ import {
   isWeekend,
   minutesOfDay,
 } from "@/shared/format";
+import { EditRecordDialog } from "./edit-record-dialog";
 import { MonthSwitcher } from "./month-switcher";
 import { useNow } from "./use-now";
 
@@ -44,6 +53,51 @@ function Timeline({ shifts, now }: { shifts: Shift[]; now: Date | null }) {
           />
         );
       })}
+    </div>
+  );
+}
+
+function SourceTag({ source }: { source: TimeSource | null }) {
+  return source === "edit" ? (
+    <span className="source-tag edit">
+      <Pencil size={10} aria-hidden="true" />
+      編集
+    </span>
+  ) : (
+    <span className="source-tag">打刻</span>
+  );
+}
+
+function ShiftTimes({ day, onEdit }: { day: Day; onEdit: ((shift: Shift) => void) | null }) {
+  const date = formatWorkDate(day.workDate);
+  return (
+    <div className="shift-times num">
+      {day.shifts.map((shift) => (
+        <span key={shift.id} className={shift.clockOutAt ? "shift-line" : "shift-line live"}>
+          {formatTime(shift.clockInAt)} <SourceTag source={shift.clockInSource} /> 〜{" "}
+          {shift.clockOutAt ? (
+            <>
+              {formatTime(shift.clockOutAt)} <SourceTag source={shift.clockOutSource} />
+            </>
+          ) : (
+            "勤務中"
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              className="icon-button small"
+              aria-label={
+                day.shifts.length > 1
+                  ? `${date} ${formatTime(shift.clockInAt)}〜の勤怠を修正`
+                  : `${date}の勤怠を修正`
+              }
+              onClick={() => onEdit(shift)}
+            >
+              <PencilLine size={14} />
+            </button>
+          )}
+        </span>
+      ))}
     </div>
   );
 }
@@ -87,12 +141,15 @@ export function RecordsCard({
   initialMonth,
   queryKey,
   load,
+  canEdit,
 }: {
   initialMonth: YearMonth;
   queryKey: (month: YearMonth) => QueryKey;
   load: (month: YearMonth) => Promise<RecordsResponse>;
+  canEdit: boolean;
 }) {
   const [month, setMonth] = useState(initialMonth);
+  const [editing, setEditing] = useState<{ shift: Shift; workDate: string } | null>(null);
   const now = useNow(30_000);
   const records = useQuery({ queryKey: queryKey(month), queryFn: () => load(month) });
   const today = now ? workDateOf(now) : null;
@@ -154,14 +211,12 @@ export function RecordsCard({
                     </span>
                   </td>
                   <td>
-                    <div className="shift-times num">
-                      {day.shifts.map((shift) => (
-                        <span key={shift.id} className={shift.clockOutAt ? undefined : "live"}>
-                          {formatTime(shift.clockInAt)} 〜{" "}
-                          {shift.clockOutAt ? formatTime(shift.clockOutAt) : "勤務中"}
-                        </span>
-                      ))}
-                    </div>
+                    <ShiftTimes
+                      day={day}
+                      onEdit={
+                        canEdit ? (shift) => setEditing({ shift, workDate: day.workDate }) : null
+                      }
+                    />
                   </td>
                   <td className="number">
                     <span className="duration num">{formatDuration(day.durationMs)}</span>
@@ -174,6 +229,14 @@ export function RecordsCard({
             </tbody>
           </table>
         </div>
+      )}
+      {editing && (
+        <EditRecordDialog
+          key={editing.shift.id}
+          shift={editing.shift}
+          workDate={editing.workDate}
+          onClose={() => setEditing(null)}
+        />
       )}
     </section>
   );

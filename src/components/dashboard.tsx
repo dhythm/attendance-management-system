@@ -5,6 +5,7 @@ import { CalendarDays, LogIn, LogOut, Timer } from "lucide-react";
 import { api } from "@/client/api-client";
 import { queryKeys } from "@/client/query-keys";
 import type { YearMonth } from "@/domain/attendance";
+import { canEditAttendance } from "@/domain/role";
 import type { User } from "@/domain/user";
 import { formatClock, formatElapsed, formatLongDate, formatTime } from "@/shared/format";
 import { AppShell } from "./app-shell";
@@ -15,7 +16,12 @@ export function Dashboard({ user, initialMonth }: { user: User; initialMonth: Ye
   return (
     <AppShell user={user}>
       <ClockHero user={user} />
-      <RecordsCard initialMonth={initialMonth} queryKey={queryKeys.records} load={api.records} />
+      <RecordsCard
+        initialMonth={initialMonth}
+        queryKey={queryKeys.records}
+        load={api.records}
+        canEdit={canEditAttendance(user.role, true)}
+      />
     </AppShell>
   );
 }

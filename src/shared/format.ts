@@ -74,6 +74,14 @@ export function formatDateTime(iso: string): string {
   return dateTimeFormat.format(new Date(iso));
 }
 
+export function toTokyoDateTimeLocal(iso: string): string {
+  return new Date(new Date(iso).getTime() + JST_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+export function fromTokyoDateTimeLocal(value: string): string {
+  return `${value}:00+09:00`;
+}
+
 export function formatWorkDate(workDate: string): string {
   const date = new Date(`${workDate}T00:00:00Z`);
   return `${date.getUTCMonth() + 1}/${date.getUTCDate()}(${weekdays[date.getUTCDay()]})`;

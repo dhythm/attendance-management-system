@@ -2,10 +2,13 @@ import type { z } from "zod";
 import type { Role } from "@/domain/role";
 import {
   type CreateUserRequest,
+  type EditRecordRequest,
   type ErrorCode,
+  editRecordResponseSchema,
   errorBodySchema,
   type LoginRequest,
   managedUsersResponseSchema,
+  recordEditsResponseSchema,
   recordsResponseSchema,
   statusResponseSchema,
   userResponseSchema,
@@ -59,6 +62,16 @@ export const api = {
   clockOut: () => request("/api/attendance/clock-out", statusResponseSchema, { method: "POST" }),
   records: (month: string) =>
     request(`/api/attendance/records?month=${encodeURIComponent(month)}`, recordsResponseSchema),
+  editRecord: (recordId: string, body: EditRecordRequest) =>
+    request(`/api/attendance/records/${encodeURIComponent(recordId)}`, editRecordResponseSchema, {
+      method: "PATCH",
+      body,
+    }),
+  recordEdits: (recordId: string) =>
+    request(
+      `/api/attendance/records/${encodeURIComponent(recordId)}/edits`,
+      recordEditsResponseSchema,
+    ),
   usersOverview: (month: string) =>
     request(`/api/manager/users?month=${encodeURIComponent(month)}`, usersOverviewResponseSchema),
   userRecords: (userId: string, month: string) =>

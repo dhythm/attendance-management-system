@@ -22,6 +22,8 @@
   --danger: #dc2626;
   --danger-soft: rgb(220 38 38 / 0.08);
   --weekend: #c2410c;
+  --edited: #b45309;
+  --edited-soft: rgb(217 119 6 / 0.12);
 
   --role-employee: #57534e;
   --role-employee-soft: rgb(87 83 78 / 0.1);
@@ -71,6 +73,8 @@
     --danger: #f87171;
     --danger-soft: rgb(248 113 113 / 0.12);
     --weekend: #fb923c;
+    --edited: #fbbf24;
+    --edited-soft: rgb(251 191 36 / 0.14);
 
     --role-employee: #c7c5c0;
     --role-employee-soft: rgb(199 197 192 / 0.1);
@@ -115,7 +119,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -498,6 +503,12 @@ button:disabled {
   border-color: var(--border-strong);
 }
 
+.icon-button.small {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
 .avatar {
   display: grid;
   flex: none;
@@ -696,6 +707,26 @@ button:disabled {
   font-weight: 600;
 }
 
+.textarea {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hint {
   color: var(--muted);
   font-size: 12px;
@@ -858,6 +889,51 @@ td.number {
   font-weight: 600;
 }
 
+.shift-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+}
+
+.shift-line .icon-button {
+  margin-left: 4px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--subtle);
+}
+
+tbody tr:hover .shift-line .icon-button,
+.shift-line .icon-button:focus-visible {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.shift-line .icon-button:hover {
+  color: var(--ink);
+}
+
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: var(--subtle);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 18px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.source-tag.edit {
+  color: var(--edited);
+  background: var(--edited-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--edited) 28%, transparent);
+}
+
 .duration {
   color: var(--ink);
   font-size: 15px;
@@ -948,6 +1024,119 @@ td.number {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #6ee7b7, #059669);
+}
+
+/* ---------- Dialog ---------- */
+
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+
+.dialog[open] {
+  animation: dialog-in 0.18s var(--ease);
+}
+
+.dialog::backdrop {
+  background: rgb(13 13 16 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog-body {
+  padding: 20px 24px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 24px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+}
+
+.dialog-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.dialog-section-title svg {
+  color: var(--muted);
+}
+
+.edit-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edit-history li {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.edit-history-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.edit-history-meta strong {
+  color: var(--ink);
+}
+
+.edit-history-changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 4px;
+  color: var(--edited);
+  font-weight: 650;
+}
+
+.edit-history-reason {
+  margin-top: 2px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Clock hero ---------- */
@@ -1331,7 +1520,8 @@ td.number {
 
 @media (prefers-reduced-motion: reduce) {
   .working .dot::after,
-  .timeline-shift.live {
+  .timeline-shift.live,
+  .dialog[open] {
     animation: none;
   }
 

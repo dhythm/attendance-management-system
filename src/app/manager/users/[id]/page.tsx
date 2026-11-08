@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { Avatar, RoleBadge } from "@/components/identity";
 import { UserRecords } from "@/components/user-records";
 import { currentYearMonth } from "@/domain/attendance";
+import { canEditAttendance } from "@/domain/role";
 import { requirePageCapability } from "@/server/auth/session-from-cookies";
 import { getDb } from "@/server/db/client";
 import { findUserById, parseUserId } from "@/server/repositories/users";
@@ -33,7 +34,11 @@ export default async function UserRecordsPage({ params }: PageProps<"/manager/us
           </p>
         </div>
       </header>
-      <UserRecords userId={target.id} initialMonth={currentYearMonth(new Date())} />
+      <UserRecords
+        userId={target.id}
+        initialMonth={currentYearMonth(new Date())}
+        canEdit={canEditAttendance(viewer.role, viewer.id === target.id)}
+      />
     </AppShell>
   );
 }
