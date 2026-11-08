@@ -10,6 +10,18 @@ export type YearMonth = string & { readonly __brand: "YearMonth" };
 
 type Shift = { clockInAt: Date; clockOutAt: Date | null };
 
+export const timeSources = ["clock", "edit"] as const;
+export type TimeSource = (typeof timeSources)[number];
+
+export type SourcedShift = Shift & { clockInSource: TimeSource; clockOutSource: TimeSource | null };
+
+export type EditError =
+  | "NO_CHANGES"
+  | "CLOCK_OUT_REQUIRED"
+  | "CLOCK_OUT_NOT_AFTER_CLOCK_IN"
+  | "FUTURE_TIME"
+  | "OVERLAPPING_RECORD";
+
 // Asia/Tokyo has had no DST since 1951, so a fixed offset is exact.
 const TOKYO_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -32,6 +44,41 @@ export function decideClockOut(
   if (status.kind === "off_duty") return err("NOT_WORKING");
   if (now.getTime() <= status.since.getTime()) return err("CLOCK_OUT_NOT_AFTER_CLOCK_IN");
   return ok({ clockOutAt: now });
+}
+
+function sameInstant(a: Date | null, b: Date | null): boolean {
+  return a === null || b === null ? a === b : a.getTime() === b.getTime();
+}
+
+function overlaps(a: Shift, b: Shift, now: Date): boolean {
+  const end = (shift: Shift) => (shift.clockOutAt ?? now).getTime();
+  return a.clockInAt.getTime() < end(b) && b.clockInAt.getTime() < end(a);
+}
+
+export function decideEdit(
+  record: SourcedShift,
+  otherRecordsOfUser: readonly Shift[],
+  input: Shift,
+  now: Date,
+): Result<SourcedShift, EditError> {
+  const clockInChanged = !sameInstant(record.clockInAt, input.clockInAt);
+  const clockOutChanged = !sameInstant(record.clockOutAt, input.clockOutAt);
+  if (!clockInChanged && !clockOutChanged) return err("NO_CHANGES");
+  if (record.clockOutAt && !input.clockOutAt) return err("CLOCK_OUT_REQUIRED");
+  if (input.clockOutAt && input.clockOutAt.getTime() <= input.clockInAt.getTime()) {
+    return err("CLOCK_OUT_NOT_AFTER_CLOCK_IN");
+  }
+  const latest = Math.max(input.clockInAt.getTime(), input.clockOutAt?.getTime() ?? 0);
+  if (latest > now.getTime()) return err("FUTURE_TIME");
+  if (otherRecordsOfUser.some((other) => overlaps(input, other, now))) {
+    return err("OVERLAPPING_RECORD");
+  }
+  return ok({
+    clockInAt: input.clockInAt,
+    clockOutAt: input.clockOutAt,
+    clockInSource: clockInChanged ? "edit" : record.clockInSource,
+    clockOutSource: clockOutChanged ? "edit" : record.clockOutSource,
+  });
 }
 
 function toTokyoWallClock(instant: Date): Date {
