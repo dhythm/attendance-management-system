@@ -7,7 +7,7 @@ import { hashPassword } from "@/server/auth/password";
 import { getDb } from "@/server/db/client";
 import { createUser } from "@/server/repositories/users";
 
-type Handler = (request: NextRequest) => Promise<Response>;
+type Handler<P> = (request: NextRequest, ctx: { params: Promise<P> }) => Promise<Response>;
 
 type RequestOptions = { method?: string; body?: unknown; cookie?: string | null; rawBody?: string };
 
@@ -25,8 +25,13 @@ export function request(path: string, options: RequestOptions = {}): NextRequest
   });
 }
 
-export async function call(handler: Handler, path: string, options: RequestOptions = {}) {
-  const response = await handler(request(path, options));
+export async function call<P = Record<string, never>>(
+  handler: Handler<P>,
+  path: string,
+  options: RequestOptions & { params?: P } = {},
+) {
+  const params = options.params ?? ({} as P);
+  const response = await handler(request(path, options), { params: Promise.resolve(params) });
   const text = await response.text();
   return { response, status: response.status, json: text ? JSON.parse(text) : null };
 }

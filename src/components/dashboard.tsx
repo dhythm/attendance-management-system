@@ -1,49 +1,20 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { api } from "@/client/api-client";
 import { queryKeys } from "@/client/query-keys";
-import { shiftMonth, type YearMonth } from "@/domain/attendance";
-import { formatDuration, formatTime, formatWorkDate, formatYearMonth } from "@/shared/format";
+import type { YearMonth } from "@/domain/attendance";
+import type { User } from "@/domain/user";
+import { formatTime } from "@/shared/format";
+import { AppHeader } from "./app-header";
+import { RecordsCard } from "./records-card";
 
-export function Dashboard({
-  displayName,
-  initialMonth,
-}: {
-  displayName: string;
-  initialMonth: YearMonth;
-}) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const logout = useMutation({
-    mutationFn: api.logout,
-    onSuccess: () => {
-      queryClient.clear();
-      router.replace("/login");
-      router.refresh();
-    },
-  });
-
+export function Dashboard({ user, initialMonth }: { user: User; initialMonth: YearMonth }) {
   return (
     <main>
-      <div className="header">
-        <h1>勤怠管理</h1>
-        <div>
-          <span className="muted">{displayName} さん</span>{" "}
-          <button type="button" onClick={() => logout.mutate()} disabled={logout.isPending}>
-            ログアウト
-          </button>
-        </div>
-      </div>
-      {logout.error && (
-        <p role="alert" className="error">
-          {logout.error.message}
-        </p>
-      )}
+      <AppHeader user={user} />
       <StatusCard />
-      <RecordsCard initialMonth={initialMonth} />
+      <RecordsCard initialMonth={initialMonth} queryKey={queryKeys.records} load={api.records} />
     </main>
   );
 }
@@ -93,72 +64,6 @@ function StatusCard() {
           </button>
         )}
       </div>
-    </section>
-  );
-}
-
-function RecordsCard({ initialMonth }: { initialMonth: YearMonth }) {
-  const [month, setMonth] = useState(initialMonth);
-  const records = useQuery({
-    queryKey: queryKeys.records(month),
-    queryFn: () => api.records(month),
-  });
-
-  return (
-    <section className="card" aria-labelledby="records-heading">
-      <div className="month-nav">
-        <button type="button" onClick={() => setMonth(shiftMonth(month, -1))}>
-          ← 前月
-        </button>
-        <h2 id="records-heading">{formatYearMonth(month)}の勤怠</h2>
-        <button type="button" onClick={() => setMonth(shiftMonth(month, 1))}>
-          翌月 →
-        </button>
-      </div>
-      {records.error && (
-        <p role="alert" className="error">
-          {records.error.message}
-        </p>
-      )}
-      {records.isPending && <p className="muted">読み込み中…</p>}
-      {records.data && records.data.days.length === 0 && (
-        <p className="muted">この月の記録はありません</p>
-      )}
-      {records.data && records.data.days.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>日付</th>
-              <th>出勤〜退勤</th>
-              <th className="number">勤務時間</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.data.days.map((day) => (
-              <tr key={day.workDate}>
-                <td>{formatWorkDate(day.workDate)}</td>
-                <td>
-                  {day.shifts.map((shift) => (
-                    <div key={shift.id}>
-                      {formatTime(shift.clockInAt)} 〜{" "}
-                      {shift.clockOutAt ? formatTime(shift.clockOutAt) : "勤務中"}
-                    </div>
-                  ))}
-                </td>
-                <td className="number">{formatDuration(day.durationMs)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={2}>合計</td>
-              <td className="number" data-testid="monthly-total">
-                {formatDuration(records.data.totalMs)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      )}
     </section>
   );
 }

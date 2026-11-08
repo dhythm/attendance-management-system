@@ -166,3 +166,31 @@ tfoot td {
 .muted {
   color: var(--muted);
 }
+
+.nav {
+  display: flex;
+  gap: 16px;
+  margin: -8px 0 24px;
+}
+
+.nav a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.status-badge {
+  font-weight: 600;
+}
+
+.status-badge.working {
+  color: var(--working);
+}
+
+.page-title {
+  margin: 0 0 16px;
+}

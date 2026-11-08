@@ -6,6 +6,8 @@ import type { ErrorCode } from "@/shared/api";
 const errors: Record<ErrorCode, { status: number; message: string }> = {
   VALIDATION_ERROR: { status: 400, message: "入力内容に誤りがあります" },
   UNAUTHORIZED: { status: 401, message: "ログインしてください" },
+  FORBIDDEN: { status: 403, message: "この操作を行う権限がありません" },
+  USER_NOT_FOUND: { status: 404, message: "ユーザーが見つかりません" },
   INVALID_CREDENTIALS: { status: 401, message: "ログインIDまたはパスワードが正しくありません" },
   LOGIN_ID_TAKEN: { status: 409, message: "このログインIDは既に使われています" },
   ALREADY_WORKING: { status: 409, message: "既に出勤しています" },

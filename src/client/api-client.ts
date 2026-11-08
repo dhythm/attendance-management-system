@@ -6,6 +6,7 @@ import {
   recordsResponseSchema,
   statusResponseSchema,
   userResponseSchema,
+  usersOverviewResponseSchema,
 } from "@/shared/api";
 
 export type ApiError = Error & { code: ErrorCode | "NETWORK_ERROR"; status: number };
@@ -55,4 +56,11 @@ export const api = {
   clockOut: () => request("/api/attendance/clock-out", statusResponseSchema, { method: "POST" }),
   records: (month: string) =>
     request(`/api/attendance/records?month=${encodeURIComponent(month)}`, recordsResponseSchema),
+  usersOverview: (month: string) =>
+    request(`/api/manager/users?month=${encodeURIComponent(month)}`, usersOverviewResponseSchema),
+  userRecords: (userId: string, month: string) =>
+    request(
+      `/api/manager/users/${encodeURIComponent(userId)}/records?month=${encodeURIComponent(month)}`,
+      recordsResponseSchema,
+    ),
 };

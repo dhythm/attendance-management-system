@@ -1,3 +1,5 @@
+import type { Role } from "@/domain/role";
+
 const timeFormat = new Intl.DateTimeFormat("ja-JP", {
   timeZone: "Asia/Tokyo",
   hour: "2-digit",
@@ -27,3 +29,9 @@ export function formatYearMonth(month: string): string {
   const [year, monthNumber] = month.split("-");
   return `${year}年${Number(monthNumber)}月`;
 }
+
+export const roleLabels: Record<Role, string> = {
+  employee: "一般社員",
+  manager: "マネージャー",
+  admin: "アドミン",
+};

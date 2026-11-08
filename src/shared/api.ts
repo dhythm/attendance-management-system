@@ -26,6 +26,8 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export const errorCodes = [
   "VALIDATION_ERROR",
   "UNAUTHORIZED",
+  "FORBIDDEN",
+  "USER_NOT_FOUND",
   "INVALID_CREDENTIALS",
   "LOGIN_ID_TAKEN",
   "ALREADY_WORKING",
@@ -78,3 +80,9 @@ export const recordsResponseSchema = z.object({
   totalMs: z.number(),
 });
 export type RecordsResponse = z.infer<typeof recordsResponseSchema>;
+
+export const usersOverviewResponseSchema = z.object({
+  month: z.string(),
+  users: z.array(userSchema.extend({ status: statusSchema, totalMs: z.number() })),
+});
+export type UsersOverviewResponse = z.infer<typeof usersOverviewResponseSchema>;

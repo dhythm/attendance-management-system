@@ -73,3 +73,33 @@ export async function listRecordsClockedInBetween(
     .orderBy(asc(attendanceRecords.clockInAt));
   return rows.map((row) => recordRow.parse(row));
 }
+
+const withUserId = recordRow.extend({ userId: z.uuid().transform((id) => id as UserId) });
+export type UserAttendanceRecord = z.infer<typeof withUserId>;
+
+const columnsWithUserId = { ...columns, userId: attendanceRecords.userId };
+
+export async function listAllOpenRecords(db: Db): Promise<UserAttendanceRecord[]> {
+  const rows = await db
+    .select(columnsWithUserId)
+    .from(attendanceRecords)
+    .where(isNull(attendanceRecords.clockOutAt));
+  return rows.map((row) => withUserId.parse(row));
+}
+
+export async function listAllRecordsClockedInBetween(
+  db: Db,
+  range: { start: Date; end: Date },
+): Promise<UserAttendanceRecord[]> {
+  const rows = await db
+    .select(columnsWithUserId)
+    .from(attendanceRecords)
+    .where(
+      and(
+        gte(attendanceRecords.clockInAt, range.start),
+        lt(attendanceRecords.clockInAt, range.end),
+      ),
+    )
+    .orderBy(asc(attendanceRecords.clockInAt));
+  return rows.map((row) => withUserId.parse(row));
+}
