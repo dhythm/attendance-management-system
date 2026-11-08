@@ -6,6 +6,7 @@ import {
   deriveStatus,
   monthRange,
   parseYearMonth,
+  shiftMonth,
   summarizeMonth,
   workDateOf,
 } from "./attendance";
@@ -123,5 +124,15 @@ describe("summarizeMonth", () => {
 
   it("totals zero for no records", () => {
     expect(summarizeMonth([])).toEqual({ entries: [], totalMs: 0 });
+  });
+});
+
+describe("shiftMonth", () => {
+  it("moves across year boundaries", () => {
+    const november = parseYearMonth("2026-11");
+    const january = parseYearMonth("2027-01");
+    if (!november || !january) throw new Error("invalid month");
+    expect(shiftMonth(november, 2)).toBe("2027-01");
+    expect(shiftMonth(january, -1)).toBe("2026-12");
   });
 });

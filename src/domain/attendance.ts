@@ -75,3 +75,10 @@ export function summarizeMonth<R extends Shift>(
   const totalMs = entries.reduce((sum, entry) => sum + (entry.durationMs ?? 0), 0);
   return { entries, totalMs };
 }
+
+export function shiftMonth(month: YearMonth, delta: number): YearMonth {
+  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
+  return new Date(Date.UTC(year, monthNumber - 1 + delta, 1))
+    .toISOString()
+    .slice(0, 7) as YearMonth;
+}
