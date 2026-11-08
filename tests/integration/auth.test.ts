@@ -3,7 +3,7 @@ import { POST as login } from "@/app/api/auth/login/route";
 import { POST as logout } from "@/app/api/auth/logout/route";
 import { POST as signup } from "@/app/api/auth/signup/route";
 import { GET as me } from "@/app/api/me/route";
-import { call, sessionCookieFrom, signUp, uniqueLoginId } from "./helpers";
+import { call, createAccount, sessionCookieFrom, uniqueLoginId } from "./helpers";
 
 describe("POST /api/auth/signup", () => {
   it("creates the user and starts a session", async () => {
@@ -27,7 +27,7 @@ describe("POST /api/auth/signup", () => {
   });
 
   it("rejects a login ID that is already taken with 409", async () => {
-    const { loginId } = await signUp();
+    const { loginId } = await createAccount();
     const result = await call(signup, "/api/auth/signup", {
       body: { loginId, password: "another-password", displayName: "別人" },
     });
@@ -52,7 +52,7 @@ describe("POST /api/auth/signup", () => {
 
 describe("POST /api/auth/login", () => {
   it("starts a session for correct credentials", async () => {
-    const { loginId, password } = await signUp();
+    const { loginId, password } = await createAccount();
     const result = await call(login, "/api/auth/login", { body: { loginId, password } });
 
     expect(result.status).toBe(200);
@@ -62,7 +62,7 @@ describe("POST /api/auth/login", () => {
   });
 
   it("returns the same 401 for a wrong password and an unknown login ID", async () => {
-    const { loginId } = await signUp();
+    const { loginId } = await createAccount();
     const wrongPassword = await call(login, "/api/auth/login", {
       body: { loginId, password: "wrong-password" },
     });
@@ -89,7 +89,7 @@ describe("GET /api/me", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
       vi.setSystemTime(new Date("2026-11-01T00:00:00Z"));
-      const { cookie } = await signUp();
+      const { cookie } = await createAccount();
       vi.setSystemTime(new Date("2026-11-07T23:59:59Z"));
       expect((await call(me, "/api/me", { cookie })).status).toBe(200);
       vi.setSystemTime(new Date("2026-11-08T00:00:01Z"));
@@ -107,7 +107,7 @@ describe("GET /api/me", () => {
 
 describe("POST /api/auth/logout", () => {
   it("ends the session so the same cookie no longer authenticates", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(logout, "/api/auth/logout", { method: "POST", cookie });
 
     expect(result.status).toBe(204);

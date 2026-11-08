@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
 import { expect } from "vitest";
-import { POST as signupHandler } from "@/app/api/auth/signup/route";
+import { POST as loginHandler } from "@/app/api/auth/login/route";
+import type { Role } from "@/domain/role";
+import { hashPassword } from "@/server/auth/password";
+import { getDb } from "@/server/db/client";
+import { createUser } from "@/server/repositories/users";
 
 type Handler = (request: NextRequest) => Promise<Response>;
 
@@ -36,15 +40,23 @@ export function uniqueLoginId(prefix = "user"): string {
   return `${prefix}_${randomUUID().slice(0, 8)}`;
 }
 
-export async function signUp(overrides: Partial<Record<"loginId" | "password", string>> = {}) {
-  const credentials = {
-    loginId: overrides.loginId ?? uniqueLoginId(),
-    password: overrides.password ?? "password-1234",
-    displayName: "山田 太郎",
-  };
-  const result = await call(signupHandler, "/api/auth/signup", { body: credentials });
-  expect(result.status).toBe(201);
+export async function logIn(loginId: string, password: string): Promise<string> {
+  const result = await call(loginHandler, "/api/auth/login", { body: { loginId, password } });
+  expect(result.status).toBe(200);
   const cookie = sessionCookieFrom(result.response);
-  if (!cookie) throw new Error("signup did not set a session cookie");
-  return { ...credentials, cookie, user: result.json.user };
+  if (!cookie) throw new Error("login did not set a session cookie");
+  return cookie;
+}
+
+export async function createAccount(role: Role = "employee") {
+  const loginId = uniqueLoginId(role);
+  const password = "password-1234";
+  const user = await createUser(await getDb(), {
+    loginId,
+    displayName: `${role} ${loginId}`,
+    passwordHash: await hashPassword(password),
+    role,
+  });
+  if (user === "LOGIN_ID_TAKEN") throw new Error(`login ID collision: ${loginId}`);
+  return { loginId, password, user, cookie: await logIn(loginId, password) };
 }

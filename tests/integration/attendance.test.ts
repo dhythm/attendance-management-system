@@ -3,7 +3,7 @@ import { POST as clockIn } from "@/app/api/attendance/clock-in/route";
 import { POST as clockOut } from "@/app/api/attendance/clock-out/route";
 import { GET as records } from "@/app/api/attendance/records/route";
 import { GET as status } from "@/app/api/attendance/status/route";
-import { call, signUp } from "./helpers";
+import { call, createAccount } from "./helpers";
 
 const jst = (iso: string) => new Date(`${iso}+09:00`);
 const HOUR = 3_600_000;
@@ -43,14 +43,14 @@ describe("authorization", () => {
 
 describe("clocking in and out", () => {
   it("starts off duty", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(status, "/api/attendance/status", { cookie });
     expect(result.status).toBe(200);
     expect(result.json).toEqual({ status: { kind: "off_duty" } });
   });
 
   it("clocks in and reports working since the clock-in time", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
 
     const working = { status: { kind: "working", since: "2026-11-02T00:00:00.000Z" } };
@@ -60,7 +60,7 @@ describe("clocking in and out", () => {
   });
 
   it("rejects a second clock-in with 409", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
     const second = await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
     expect(second.status).toBe(409);
@@ -68,7 +68,7 @@ describe("clocking in and out", () => {
   });
 
   it("accepts only one of two concurrent clock-ins", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const results = await Promise.all([
       call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie }),
       call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie }),
@@ -77,7 +77,7 @@ describe("clocking in and out", () => {
   });
 
   it("clocks out and returns to off duty", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
     vi.setSystemTime(jst("2026-11-02T18:00:00"));
     const result = await call(clockOut, "/api/attendance/clock-out", { method: "POST", cookie });
@@ -90,15 +90,15 @@ describe("clocking in and out", () => {
   });
 
   it("rejects clock-out when not working with 409", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(clockOut, "/api/attendance/clock-out", { method: "POST", cookie });
     expect(result.status).toBe(409);
     expect(result.json.error.code).toBe("NOT_WORKING");
   });
 
   it("keeps each user's attendance separate", async () => {
-    const alice = await signUp();
-    const bob = await signUp();
+    const alice = await createAccount();
+    const bob = await createAccount();
     await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie: alice.cookie });
     const bobStatus = await call(status, "/api/attendance/status", { cookie: bob.cookie });
     expect(bobStatus.json).toEqual({ status: { kind: "off_duty" } });
@@ -108,7 +108,7 @@ describe("clocking in and out", () => {
 describe("GET /api/attendance/records", () => {
   it("lists the month's shifts by clock-in date in Asia/Tokyo with durations and a total", async () => {
     vi.setSystemTime(jst("2026-10-31T21:00:00"));
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     await shift(cookie, "2026-10-31T22:00:00", "2026-11-01T05:00:00");
     await shift(cookie, "2026-11-02T09:00:00", "2026-11-02T18:00:00");
     await shift(cookie, "2026-11-04T09:00:00", "2026-11-04T12:00:00");
@@ -134,7 +134,7 @@ describe("GET /api/attendance/records", () => {
   });
 
   it("includes an open shift without a duration", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
     const result = await call(records, "/api/attendance/records?month=2026-11", { cookie });
     expect(result.json.days).toEqual([
@@ -157,14 +157,14 @@ describe("GET /api/attendance/records", () => {
 
   it("defaults to the current month in Asia/Tokyo", async () => {
     vi.setSystemTime(new Date("2026-11-30T15:30:00Z"));
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(records, "/api/attendance/records", { cookie });
     expect(result.json.month).toBe("2026-12");
   });
 
   it("does not include other users' shifts", async () => {
-    const alice = await signUp();
-    const bob = await signUp();
+    const alice = await createAccount();
+    const bob = await createAccount();
     await shift(alice.cookie, "2026-11-02T09:00:00", "2026-11-02T18:00:00");
     const result = await call(records, "/api/attendance/records?month=2026-11", {
       cookie: bob.cookie,
@@ -173,7 +173,7 @@ describe("GET /api/attendance/records", () => {
   });
 
   it("rejects an invalid month with 400", async () => {
-    const { cookie } = await signUp();
+    const { cookie } = await createAccount();
     const result = await call(records, "/api/attendance/records?month=2026-13", { cookie });
     expect(result.status).toBe(400);
     expect(result.json.error.code).toBe("VALIDATION_ERROR");
