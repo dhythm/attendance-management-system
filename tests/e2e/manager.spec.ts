@@ -14,7 +14,7 @@ test("a manager sees who is working and opens a user's monthly records", async (
   const overview = page.getByRole("region", { name: /の勤怠一覧$/ });
   const yamada = overview.getByRole("row").filter({ hasText: "山田 太郎" });
   await expect(yamada).toContainText(/勤務中（\d{2}:\d{2} 出勤）/);
-  await expect(overview.getByRole("row").filter({ hasText: "鈴木 花子" })).toContainText("勤務外");
+  await expect(overview.getByRole("row").filter({ hasText: "アドミン" })).toContainText("勤務外");
 
   await yamada.getByRole("link", { name: "山田 太郎" }).click();
   await expect(page.getByRole("heading", { name: "山田 太郎（yamada）さんの勤怠" })).toBeVisible();
