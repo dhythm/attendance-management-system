@@ -23,7 +23,7 @@ describe("POST /api/auth/signup", () => {
     const cookie = sessionCookieFrom(result.response);
     const current = await call(me, "/api/me", { cookie });
     expect(current.status).toBe(200);
-    expect(current.json.user.loginId).toBe(loginId);
+    expect(current.json.user).toMatchObject({ loginId, role: "employee" });
   });
 
   it("rejects a login ID that is already taken with 409", async () => {

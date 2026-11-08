@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { type Role, roles } from "@/domain/role";
 import type { User, UserId } from "@/domain/user";
 import type { Db } from "@/server/db/client";
 import { isUniqueViolation } from "@/server/db/errors";
@@ -9,6 +10,7 @@ const userRow = z.object({
   id: z.uuid().transform((id) => id as UserId),
   loginId: z.string(),
   displayName: z.string(),
+  role: z.enum(roles),
 });
 
 export function toUser(row: unknown): User {
@@ -17,7 +19,7 @@ export function toUser(row: unknown): User {
 
 export async function createUser(
   db: Db,
-  input: { loginId: string; displayName: string; passwordHash: string },
+  input: { loginId: string; displayName: string; passwordHash: string; role: Role },
 ): Promise<User | "LOGIN_ID_TAKEN"> {
   try {
     const [row] = await db.insert(users).values(input).returning();

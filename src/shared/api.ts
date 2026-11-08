@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { roles } from "@/domain/role";
 
 export const loginIdSchema = z
   .string()
@@ -49,6 +50,7 @@ export const userSchema = z.object({
   id: z.uuid(),
   loginId: z.string(),
   displayName: z.string(),
+  role: z.enum(roles),
 });
 export type User = z.infer<typeof userSchema>;
 

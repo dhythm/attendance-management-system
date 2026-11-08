@@ -17,6 +17,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     loginId,
     displayName,
     passwordHash: await hashPassword(password),
+    role: "employee",
   });
   if (user === "LOGIN_ID_TAKEN") return errorResponse("LOGIN_ID_TAKEN");
 

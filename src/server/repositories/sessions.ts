@@ -24,7 +24,12 @@ export async function findUserBySessionToken(
   now: Date,
 ): Promise<User | null> {
   const [row] = await db
-    .select({ id: users.id, loginId: users.loginId, displayName: users.displayName })
+    .select({
+      id: users.id,
+      loginId: users.loginId,
+      displayName: users.displayName,
+      role: users.role,
+    })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
     .where(and(eq(sessions.tokenHash, hashSessionToken(token)), gt(sessions.expiresAt, now)))

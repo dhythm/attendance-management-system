@@ -1,15 +1,26 @@
 import { sql } from "drizzle-orm";
 import { check, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { roles } from "@/domain/role";
 
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  loginId: text("login_id").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  displayName: text("display_name").notNull(),
-  createdAt: timestamptz("created_at").notNull().defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    loginId: text("login_id").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role", { enum: roles }).notNull().default("employee"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "users_role_valid",
+      sql`${t.role} IN (${sql.raw(roles.map((role) => `'${role}'`).join(", "))})`,
+    ),
+  ],
+);
 
 export const sessions = pgTable(
   "sessions",
