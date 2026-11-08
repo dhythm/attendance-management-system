@@ -1,0 +1,109 @@
+import { describe, expect, it } from "vitest";
+import { POST as login } from "@/app/api/auth/login/route";
+import { POST as logout } from "@/app/api/auth/logout/route";
+import { POST as signup } from "@/app/api/auth/signup/route";
+import { GET as me } from "@/app/api/me/route";
+import { call, sessionCookieFrom, signUp, uniqueLoginId } from "./helpers";
+
+describe("POST /api/auth/signup", () => {
+  it("creates the user and starts a session", async () => {
+    const loginId = uniqueLoginId();
+    const result = await call(signup, "/api/auth/signup", {
+      body: { loginId, password: "password-1234", displayName: "山田 太郎" },
+    });
+
+    expect(result.status).toBe(201);
+    expect(result.json.user).toMatchObject({ loginId, displayName: "山田 太郎" });
+    expect(result.json.user).not.toHaveProperty("passwordHash");
+    const setCookie = result.response.headers.getSetCookie().join("\n");
+    expect(setCookie).toMatch(/session=[^;]+;/);
+    expect(setCookie).toMatch(/HttpOnly/i);
+    expect(setCookie).toMatch(/SameSite=lax/i);
+
+    const cookie = sessionCookieFrom(result.response);
+    const current = await call(me, "/api/me", { cookie });
+    expect(current.status).toBe(200);
+    expect(current.json.user.loginId).toBe(loginId);
+  });
+
+  it("rejects a login ID that is already taken with 409", async () => {
+    const { loginId } = await signUp();
+    const result = await call(signup, "/api/auth/signup", {
+      body: { loginId, password: "another-password", displayName: "別人" },
+    });
+    expect(result.status).toBe(409);
+    expect(result.json.error.code).toBe("LOGIN_ID_TAKEN");
+  });
+
+  it("rejects an invalid payload with 400", async () => {
+    const result = await call(signup, "/api/auth/signup", {
+      body: { loginId: "a", password: "short", displayName: "" },
+    });
+    expect(result.status).toBe(400);
+    expect(result.json.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects a body that is not JSON with 400", async () => {
+    const result = await call(signup, "/api/auth/signup", { rawBody: "{not json" });
+    expect(result.status).toBe(400);
+    expect(result.json.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
+describe("POST /api/auth/login", () => {
+  it("starts a session for correct credentials", async () => {
+    const { loginId, password } = await signUp();
+    const result = await call(login, "/api/auth/login", { body: { loginId, password } });
+
+    expect(result.status).toBe(200);
+    expect(result.json.user.loginId).toBe(loginId);
+    const current = await call(me, "/api/me", { cookie: sessionCookieFrom(result.response) });
+    expect(current.json.user.loginId).toBe(loginId);
+  });
+
+  it("returns the same 401 for a wrong password and an unknown login ID", async () => {
+    const { loginId } = await signUp();
+    const wrongPassword = await call(login, "/api/auth/login", {
+      body: { loginId, password: "wrong-password" },
+    });
+    const unknownUser = await call(login, "/api/auth/login", {
+      body: { loginId: uniqueLoginId("nobody"), password: "wrong-password" },
+    });
+
+    expect(wrongPassword.status).toBe(401);
+    expect(unknownUser.status).toBe(401);
+    expect(wrongPassword.json).toEqual(unknownUser.json);
+    expect(wrongPassword.json.error.code).toBe("INVALID_CREDENTIALS");
+    expect(sessionCookieFrom(wrongPassword.response)).toBeNull();
+  });
+});
+
+describe("GET /api/me", () => {
+  it("returns 401 without a session", async () => {
+    const result = await call(me, "/api/me");
+    expect(result.status).toBe(401);
+    expect(result.json.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("returns 401 for an unknown session token", async () => {
+    const result = await call(me, "/api/me", { cookie: "session=forged-token" });
+    expect(result.status).toBe(401);
+  });
+});
+
+describe("POST /api/auth/logout", () => {
+  it("ends the session so the same cookie no longer authenticates", async () => {
+    const { cookie } = await signUp();
+    const result = await call(logout, "/api/auth/logout", { method: "POST", cookie });
+
+    expect(result.status).toBe(204);
+    expect(result.response.headers.getSetCookie().join("\n")).toMatch(/session=;/);
+    const current = await call(me, "/api/me", { cookie });
+    expect(current.status).toBe(401);
+  });
+
+  it("succeeds without a session", async () => {
+    const result = await call(logout, "/api/auth/logout", { method: "POST" });
+    expect(result.status).toBe(204);
+  });
+});
