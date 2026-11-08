@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { workDateOf } from "../../src/domain/attendance";
+import { formatWorkDate } from "../../src/shared/format";
 
 test("a new user signs up, logs back in, clocks in and out, and sees the record", async ({
   page,
@@ -43,16 +45,20 @@ test("a new user signs up, logs back in, clocks in and out, and sees the record"
   await page.getByRole("button", { name: "出勤" }).click();
   await expect(status).toHaveText(/^勤務中/);
   const records = page.getByRole("region", { name: /の勤怠$/ });
-  await expect(records.getByRole("row")).toHaveCount(3);
-  await expect(records.getByRole("cell", { name: "勤務中" })).toBeVisible();
+  const today = records
+    .getByRole("row")
+    .filter({ hasText: formatWorkDate(workDateOf(new Date())) });
+  await expect(today).toHaveCount(1);
+  await expect(today.getByRole("cell").nth(1)).toHaveText(/^\d{2}:\d{2} 〜 勤務中$/);
 
   await page.getByRole("button", { name: "退勤" }).click();
   await expect(status).toHaveText("勤務外");
-  await expect(records.getByRole("cell", { name: "勤務中" })).toHaveCount(0);
+  await expect(today.getByRole("cell").nth(1)).toHaveText(/^\d{2}:\d{2} 〜 \d{2}:\d{2}$/);
+  await expect(today.getByRole("cell").nth(2)).toHaveText("0:00");
   await expect(page.getByTestId("monthly-total")).toHaveText("0:00");
 
   await page.reload();
-  await expect(records.getByRole("row")).toHaveCount(3);
+  await expect(today.getByRole("cell").nth(1)).toHaveText(/^\d{2}:\d{2} 〜 \d{2}:\d{2}$/);
 
   await page.getByRole("button", { name: "ログアウト" }).click();
   await expect(page).toHaveURL(/\/login$/);

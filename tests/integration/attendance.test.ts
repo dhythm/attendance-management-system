@@ -111,6 +111,8 @@ describe("GET /api/attendance/records", () => {
     const { cookie } = await signUp();
     await shift(cookie, "2026-10-31T22:00:00", "2026-11-01T05:00:00");
     await shift(cookie, "2026-11-02T09:00:00", "2026-11-02T18:00:00");
+    await shift(cookie, "2026-11-04T09:00:00", "2026-11-04T12:00:00");
+    await shift(cookie, "2026-11-04T13:00:00", "2026-11-04T18:00:00");
     await shift(cookie, "2026-11-06T22:00:00", "2026-11-07T06:30:00");
 
     const result = await call(records, "/api/attendance/records?month=2026-11", { cookie });
@@ -118,28 +120,37 @@ describe("GET /api/attendance/records", () => {
     expect(result.status).toBe(200);
     expect(result.json.month).toBe("2026-11");
     expect(
-      result.json.entries.map((e: { workDate: string; durationMs: number }) => [
-        e.workDate,
-        e.durationMs,
+      result.json.days.map((d: { workDate: string; shifts: unknown[]; durationMs: number }) => [
+        d.workDate,
+        d.shifts.length,
+        d.durationMs,
       ]),
     ).toEqual([
-      ["2026-11-02", 9 * HOUR],
-      ["2026-11-06", 8.5 * HOUR],
+      ["2026-11-02", 1, 9 * HOUR],
+      ["2026-11-04", 2, 8 * HOUR],
+      ["2026-11-06", 1, 8.5 * HOUR],
     ]);
-    expect(result.json.totalMs).toBe(17.5 * HOUR);
+    expect(result.json.totalMs).toBe(25.5 * HOUR);
   });
 
   it("includes an open shift without a duration", async () => {
     const { cookie } = await signUp();
     await call(clockIn, "/api/attendance/clock-in", { method: "POST", cookie });
     const result = await call(records, "/api/attendance/records?month=2026-11", { cookie });
-    expect(result.json.entries).toEqual([
-      expect.objectContaining({
+    expect(result.json.days).toEqual([
+      {
         workDate: "2026-11-02",
-        clockInAt: "2026-11-02T00:00:00.000Z",
-        clockOutAt: null,
-        durationMs: null,
-      }),
+        durationMs: 0,
+        working: true,
+        shifts: [
+          {
+            id: expect.any(String),
+            clockInAt: "2026-11-02T00:00:00.000Z",
+            clockOutAt: null,
+            durationMs: null,
+          },
+        ],
+      },
     ]);
     expect(result.json.totalMs).toBe(0);
   });
@@ -158,7 +169,7 @@ describe("GET /api/attendance/records", () => {
     const result = await call(records, "/api/attendance/records?month=2026-11", {
       cookie: bob.cookie,
     });
-    expect(result.json.entries).toEqual([]);
+    expect(result.json.days).toEqual([]);
   });
 
   it("rejects an invalid month with 400", async () => {

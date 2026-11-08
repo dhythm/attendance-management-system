@@ -121,34 +121,37 @@ function RecordsCard({ initialMonth }: { initialMonth: YearMonth }) {
         </p>
       )}
       {records.isPending && <p className="muted">読み込み中…</p>}
-      {records.data && records.data.entries.length === 0 && (
+      {records.data && records.data.days.length === 0 && (
         <p className="muted">この月の記録はありません</p>
       )}
-      {records.data && records.data.entries.length > 0 && (
+      {records.data && records.data.days.length > 0 && (
         <table>
           <thead>
             <tr>
               <th>日付</th>
-              <th>出勤</th>
-              <th>退勤</th>
+              <th>出勤〜退勤</th>
               <th className="number">勤務時間</th>
             </tr>
           </thead>
           <tbody>
-            {records.data.entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{formatWorkDate(entry.workDate)}</td>
-                <td>{formatTime(entry.clockInAt)}</td>
-                <td>{entry.clockOutAt ? formatTime(entry.clockOutAt) : "勤務中"}</td>
-                <td className="number">
-                  {entry.durationMs === null ? "—" : formatDuration(entry.durationMs)}
+            {records.data.days.map((day) => (
+              <tr key={day.workDate}>
+                <td>{formatWorkDate(day.workDate)}</td>
+                <td>
+                  {day.shifts.map((shift) => (
+                    <div key={shift.id}>
+                      {formatTime(shift.clockInAt)} 〜{" "}
+                      {shift.clockOutAt ? formatTime(shift.clockOutAt) : "勤務中"}
+                    </div>
+                  ))}
                 </td>
+                <td className="number">{formatDuration(day.durationMs)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3}>合計</td>
+              <td colSpan={2}>合計</td>
               <td className="number" data-testid="monthly-total">
                 {formatDuration(records.data.totalMs)}
               </td>

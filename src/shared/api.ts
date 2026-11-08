@@ -63,13 +63,19 @@ export type StatusResponse = z.infer<typeof statusResponseSchema>;
 
 export const recordsResponseSchema = z.object({
   month: z.string(),
-  entries: z.array(
+  days: z.array(
     z.object({
-      id: z.uuid(),
       workDate: z.string(),
-      clockInAt: isoDateTime,
-      clockOutAt: isoDateTime.nullable(),
-      durationMs: z.number().nullable(),
+      durationMs: z.number(),
+      working: z.boolean(),
+      shifts: z.array(
+        z.object({
+          id: z.uuid(),
+          clockInAt: isoDateTime,
+          clockOutAt: isoDateTime.nullable(),
+          durationMs: z.number().nullable(),
+        }),
+      ),
     }),
   ),
   totalMs: z.number(),

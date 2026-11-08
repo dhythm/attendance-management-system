@@ -16,12 +16,16 @@ export const GET = withErrorHandling(
     const summary = summarizeMonth(records);
     const body: RecordsResponse = {
       month,
-      entries: summary.entries.map((entry) => ({
-        id: entry.id,
-        workDate: entry.workDate,
-        clockInAt: entry.clockInAt.toISOString(),
-        clockOutAt: entry.clockOutAt?.toISOString() ?? null,
-        durationMs: entry.durationMs,
+      days: summary.days.map((day) => ({
+        workDate: day.workDate,
+        durationMs: day.durationMs,
+        working: day.working,
+        shifts: day.shifts.map((shift) => ({
+          id: shift.id,
+          clockInAt: shift.clockInAt.toISOString(),
+          clockOutAt: shift.clockOutAt?.toISOString() ?? null,
+          durationMs: shift.durationMs,
+        })),
       })),
       totalMs: summary.totalMs,
     };

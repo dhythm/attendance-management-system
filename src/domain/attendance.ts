@@ -64,16 +64,28 @@ export function workDurationMs(shift: Shift): number | null {
   return shift.clockOutAt ? shift.clockOutAt.getTime() - shift.clockInAt.getTime() : null;
 }
 
+export type WorkDay<R> = {
+  workDate: WorkDate;
+  shifts: (R & { durationMs: number | null })[];
+  durationMs: number;
+  working: boolean;
+};
+
 export function summarizeMonth<R extends Shift>(
   records: readonly R[],
-): { entries: (R & { workDate: WorkDate; durationMs: number | null })[]; totalMs: number } {
-  const entries = records.map((record) => ({
-    ...record,
-    workDate: workDateOf(record.clockInAt),
-    durationMs: workDurationMs(record),
-  }));
-  const totalMs = entries.reduce((sum, entry) => sum + (entry.durationMs ?? 0), 0);
-  return { entries, totalMs };
+): { days: WorkDay<R>[]; totalMs: number } {
+  const days = new Map<WorkDate, WorkDay<R>>();
+  for (const record of records) {
+    const workDate = workDateOf(record.clockInAt);
+    const day = days.get(workDate) ?? { workDate, shifts: [], durationMs: 0, working: false };
+    const durationMs = workDurationMs(record);
+    day.shifts.push({ ...record, durationMs });
+    day.durationMs += durationMs ?? 0;
+    day.working ||= durationMs === null;
+    days.set(workDate, day);
+  }
+  const list = [...days.values()].sort((a, b) => a.workDate.localeCompare(b.workDate));
+  return { days: list, totalMs: list.reduce((sum, day) => sum + day.durationMs, 0) };
 }
 
 export function shiftMonth(month: YearMonth, delta: number): YearMonth {

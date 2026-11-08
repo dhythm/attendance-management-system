@@ -108,22 +108,30 @@ describe("monthRange", () => {
 });
 
 describe("summarizeMonth", () => {
-  it("computes per-record durations and a monthly total of closed records", () => {
+  it("groups shifts by clock-in date with per-day durations and a monthly total", () => {
     const summary = summarizeMonth([
-      { clockInAt: jst("2026-11-02T09:00:00"), clockOutAt: jst("2026-11-02T18:00:00") },
+      { clockInAt: jst("2026-11-02T09:00:00"), clockOutAt: jst("2026-11-02T12:00:00") },
+      { clockInAt: jst("2026-11-02T13:00:00"), clockOutAt: jst("2026-11-02T18:00:00") },
       { clockInAt: jst("2026-11-03T22:00:00"), clockOutAt: jst("2026-11-04T06:30:00") },
       { clockInAt: jst("2026-11-05T09:00:00"), clockOutAt: null },
     ]);
-    expect(summary.entries.map((e) => [e.workDate, e.durationMs])).toEqual([
-      ["2026-11-02", 9 * 3_600_000],
-      ["2026-11-03", 8.5 * 3_600_000],
-      ["2026-11-05", null],
+    expect(summary.days.map((d) => [d.workDate, d.shifts.length, d.durationMs, d.working])).toEqual(
+      [
+        ["2026-11-02", 2, 8 * 3_600_000, false],
+        ["2026-11-03", 1, 8.5 * 3_600_000, false],
+        ["2026-11-05", 1, 0, true],
+      ],
+    );
+    expect(summary.days[0]?.shifts.map((s) => s.durationMs)).toEqual([
+      3 * 3_600_000,
+      5 * 3_600_000,
     ]);
-    expect(summary.totalMs).toBe(17.5 * 3_600_000);
+    expect(summary.days[2]?.shifts[0]?.durationMs).toBeNull();
+    expect(summary.totalMs).toBe(16.5 * 3_600_000);
   });
 
   it("totals zero for no records", () => {
-    expect(summarizeMonth([])).toEqual({ entries: [], totalMs: 0 });
+    expect(summarizeMonth([])).toEqual({ days: [], totalMs: 0 });
   });
 });
 
